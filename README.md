@@ -1,3 +1,68 @@
+====================================================================================================
+🔒 VIRTUALBOX PRIVATE NETWORK BOUNDARY: ISOLATED HOST-ONLY SUBNET (192.168.56.0/24)
+====================================================================================================
+
+      ┌────────────────────────────────────────────────────────────────────────┐
+      │  node1: CONTROL PLANE MASTER TERMINAL (192.168.56.50)                   │
+      │                                                                        │
+      │  ┌─────────────────────────┐  Manual Handshake Handing  ┌───────────┐  │
+      │  │   kube-apiserver v1.31  │ ─────────────────────────> │  RBAC     │  │
+      │  └─────────────────────────┘  (Token Management Rules)  │  Admin    │  │
+      │               │                                         └───────────┘  │
+      │               │ 🔐 Hand-Synced CA Signatures (ca.crt / apiserver.crt)   │
+                      ▼                                                        
+      └───────────────┼────────────────────────────────────────────────────────┘
+                      │
+                      ├──────────────────────────────────────┐
+                      ▼                                      ▼
+      ┌──────────────────────────────┐       ┌──────────────────────────────┐
+      │ node2: WORKER 1 (192.168.56) │       │ node3: WORKER 2 (192.168.56) │
+      │                              │       │                              │
+      │  ┌────────────────────────┐  │       │  ┌────────────────────────┐  │
+      │  │  containerd runtime    │  │       │  │  containerd runtime    │  │
+      │  │  (SystemdCgroup=true)  │  │       │  │  (SystemdCgroup=true)  │  │
+      │  └────────────────────────┘  │       │  └────────────────────────┘  │
+      │               │              │       │               │              │
+      │               ▼              │       │               ▼              │
+      │  ┌────────────────────────┐  │       │  ┌────────────────────────┐  │
+      │  │  Pre-Cached Sandbox    │  │       │  │  Pre-Cached Sandbox    │  │
+      │  │  (registry.k8s.io)     │  │       │  │  (registry.k8s.io)     │  │
+      │  └────────────────────────┘  │       │  └────────────────────────┘  │
+      └──────────────────────────────┘       └──────────────────────────────┘
+
+====================================================================================================
+🌐 WORKLOAD ORCHESTRATION & DEPLOYMENT LAYER (RUNNING LIVE ON STABLE ENVIRONMENT)
+====================================================================================================
+
+               [ Inbound User Request ] ───> NodePort Gateway (Port 32000 / 30713)
+                                                       │
+                                                       ▼
+                                      ┌─────────────────────────────────┐
+                                      │  Kubernetes Load-Balancer SVC   │
+                                      └─────────────────────────────────┘
+                                                       │
+                           ┌───────────────────────────┼───────────────────────────┐
+                           ▼                           ▼                           ▼
+              ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐
+              │   Pod 1: NGINX Web      │ │   Pod 2: NGINX Web      │ │   Pod 3: NGINX Web      │
+              │  Status: 1/1 Running    │ │  Status: 1/1 Running    │ │  Status: 1/1 Running    │
+              │                         │ │                         │ │                         │
+              │ 🛠️ LivenessProbe Active  │ │ 🛠️ LivenessProbe Active  │ │ 🛠️ LivenessProbe Active  │
+              │ 📦 ConfigMap Mounted     │ │ 📦 ConfigMap Mounted     │ │ 📦 ConfigMap Mounted     │
+              └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘
+                                                       │
+                                                       ▼
+                                      ┌─────────────────────────────────┐
+                                      │   PersistentVolumeClaim (PVC)   │
+                                      └─────────────────────────────────┘
+                                                       │
+                                                       ▼
+                                      ┌─────────────────────────────────┐
+                                      │    PostgreSQL Database Pod      │
+                                      │    Status: [BOUND STORAGE]      │
+                                      └─────────────────────────────────┘
+
+
 # 🚀 3-Node Air-Gapped Kubernetes Cluster & Microservices Deployment
 
 This project documents 5 days of intense engineering troubleshooting to deploy a multi-node Kubernetes cluster entirely offline (air-gapped) on CentOS Stream 10.
